@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        
+<mapper namespace="MovieBbs">
+
+<select id="bbslist" parameterType="mul.camp.seven.dto.BbsParam" resultType="mul.camp.seven.dto.BbsDto">
+	SELECT SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+	FROM MOVIEBBS
+	<if test="choice != null and choice != '' and search != null and search != ''">
+		<if test="choice == 'title'">
+			WHERE TITLE LIKE '%'||#{search}||'%'
+		</if>
+		<if test="choice == 'content'">
+			WHERE CONTENT LIKE '%'||#{search}||'%'
+		</if>
+		<if test="choice == 'writer'">
+			WHERE ID=#{search}
+		</if>
+	</if>
+	ORDER BY REF DESC, STEP ASC
+</select>
+
+
+<insert id="writebbs" parameterType="mul.camp.seven.dto.BbsDto">
+	INSERT INTO MOVIEBBS(SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT)
+	VALUES(SEQ_BBS.NEXTVAL, #{id}, (SELECT NVL(MAX(REF)+1, 0) FROM MOVIEBBS), 0, 0,       
+											#{title}, #{content}, SYSDATE, 0, 0)
+</insert>
+
+<select id="getBbs" parameterType="java.lang.Integer" resultType="mul.camp.seven.dto.BbsDto">
+	SELECT SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+	FROM MOVIEBBS 
+	WHERE SEQ=#{seq}
+</select>
+
+<!-- bbs update -->
+<update id="update" parameterType="mul.camp.seven.dto.BbsDto">
+	UPDATE MOVIEBBS
+	   SET TITLE = #{title}, 
+	   CONTENT = #{content} 
+     WHERE SEQ = #{seq}
+</update>
+
+<!-- bbs delete -->
+<delete id="delete" parameterType="int">
+	DELETE
+	 FROM MOVIEBBS 
+	 WHERE SEQ = #{seq}
+</delete>
+
+
+<!-- answer -->
+<update id="replyBbsUpdate" parameterType="mul.camp.seven.dto.BbsDto">
+	UPDATE MOVIEBBS
+	SET STEP = STEP + 1
+	WHERE REF = (SELECT REF FROM MOVIEBBS WHERE SEQ=#{seq})
+		AND STEP > (SELECT STEP FROM MOVIEBBS WHERE SEQ=#{seq})
+</update>
+
+<insert id="replyBbsInsert" parameterType="mul.camp.seven.dto.BbsDto">
+	INSERT INTO MOVIEBBS(SEQ, ID, REF, STEP, DEPTH,
+						 TITLE, CONTENT, WDATE, DEL, READCOUNT)
+	VALUES(SEQ_BBS.NEXTVAL, #{id},
+			(SELECT REF FROM MOVIEBBS WHERE SEQ=#{seq}),		<!-- ref -->
+			(SELECT STEP FROM MOVIEBBS WHERE SEQ=#{seq}) + 1,	<!-- step -->
+			(SELECT DEPTH FROM MOVIEBBS WHERE SEQ=#{seq}) + 1,  <!-- depth -->
+			#{title}, #{content}, SYSDATE,
+			0, 0)
+</insert>
+
+
+</mapper>
